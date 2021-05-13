@@ -17,7 +17,13 @@
 servidor */
 
 /* Maxima cantidad de cliente que soportará nuestro servidor */
-#define MAX_CLIENTS 25
+#define MAX_CLIENTS 2
+#define MAX_LENGTH 1024
+
+typedef struct {
+  int* socket;
+  char nickname[MAX_LENGTH];
+} clientes;
 
 /* Anunciamos el prototipo del hijo */
 void *child(void *arg);
@@ -59,7 +65,16 @@ int main(int argc, char **argv){
   if(listen(sock, MAX_CLIENTS) == -1)
     error(" Listen error ");
 
+  clientes clientList[MAX_CLIENTS];
+  int numClient = 0;
+
+  for(int i=0;i<MAX_CLIENTS;i++)
+    clientList[i].socket = NULL;
+
   for(;;){ /* Comenzamos con el bucle infinito*/
+    int available;
+    for(available=0; available<MAX_CLIENTS && clienteList[available].socket != NULL; i++);
+
     /* Pedimos memoria para el socket */
     soclient = malloc(sizeof(int));
 
@@ -70,8 +85,13 @@ int main(int argc, char **argv){
                           , &clientelen)) == -1)
       error("No se puedo aceptar la conexión. ");
 
+    if(numClient + 1 == MAX_CLIENTS) {
+      send_reject_msg
+    }
+
     /* Le enviamos el socket al hijo*/
     pthread_create(&thread , NULL , child, (void *) soclient);
+    numClient++;
 
     /* El servidor puede hacer alguna tarea más o simplemente volver a esperar*/
   }
