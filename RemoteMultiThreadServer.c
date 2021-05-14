@@ -38,6 +38,7 @@ int main(int argc, char **argv){
   socklen_t clientelen;
   pthread_t thread;
   pthread_attr_t attr;
+  struct common comun;
 
   if (argc <= 1) error("Faltan argumentos");
 
@@ -63,11 +64,13 @@ int main(int argc, char **argv){
   pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
   /************************************************************/
 
-  struct common comun;
+  /* Inicializamos variables */
   comun.spotsLeft = MAX_CLIENTS;
-  //comun.mutex = PTHREAD_MUTEX_INITIALIZER;
-  for(int i=0;i<MAX_CLIENTS;i++)
-    comun.sockets[i]=-1;
+  pthread_mutex_init(&comun.mutex, NULL);
+  for(int i=0;i<MAX_CLIENTS;i++) {
+    comun.nicknames[i] = NULL;
+    comun.sockets[i] = -1;
+  }
 
   /* Ya podemos aceptar conexiones */
   if(listen(sock, MAX_CLIENTS) == -1)
@@ -102,26 +105,48 @@ int main(int argc, char **argv){
 
 void * child(void *_arg){
   argumentos arg = *(argumentos*) _arg;
-  char buf[MAX_LENGTH];
+  char buf[MAX_LENGTH], rsp_mensaje[MAX_LENGTH], *temp;
   int *sockets = arg.datosComunes->sockets;
   char **nicknames = arg.datosComunes->nicknames;
+  int i;
+
   nicknames[arg.index] = malloc(sizeof(char)*MAX_NAMES);
 
   send(sockets[arg.index], "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
   recv(sockets[arg.index], buf, sizeof(buf), 0);
   strcpy(nicknames[arg.index], buf);
 
-  int i = 1;
-  while(i) {
+  while(strcmp(buf,"/exit")) {
     recv(sockets[arg.index], buf, sizeof(buf), 0);
-    printf("%s: %s\n", nicknames[arg.index], buf);
+    temp = strtok(buf, " ");
 
-    i = strcmp(buf,"/exit");
+    if(!strcmp(temp,"/nickname")) {
+      strcpy(nicknames[arg.index], strtok(NULL, " "));
+    }
+    if(!strcmp(temp,"/msg")) {
+      temp = strtok(NULL, " ");
+      for(i = 0; i<MAX_CLIENTS && (!nicknames[i] || strcmp(nicknames[i], temp)); i++);
+      if(i != MAX_CLIENTS) {
+        strcpy(rsp_mensaje, strtok(NULL, ""));
+        strcpy(buf, nicknames[arg.index]);
+        strcat(buf, ": ");
+        strcat(buf, rsp_mensaje);
+        send(sockets[i], buf, sizeof(buf), 0);
+      }else {
+        strcpy(rsp_mensaje, temp);
+        strcpy(buf, "No existe el usuario llamado ");
+        strcat(buf, rsp_mensaje);
+        send(sockets[arg.index], buf, sizeof(buf), 0);
+      }
+    }
   }
+
   printf("%s ha salido\n", nicknames[arg.index]);
   pthread_mutex_lock(&(arg.datosComunes->mutex));
   arg.datosComunes->spotsLeft++;
   pthread_mutex_unlock(&(arg.datosComunes->mutex));
+  nicknames[arg.index] = NULL;
+  sockets[arg.index] = -1;
   return NULL;
 }
 

@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <pthread.h>
 /*
   El archivo describe un sencillo cliente que se conecta al servidor establecido
   en el archivo RemoteServer.c. Se utiliza de la siguiente manera:
@@ -23,9 +23,12 @@ void error(char *msg){
   exit((perror(msg), 1));
 }
 
+void * listener(void *_arg);
+
 int main(int argc, char **argv){
   int sock;
-  char buf[1024];
+  pthread_t thread;
+  pthread_attr_t attr;
   struct addrinfo *resultado;
 
   /*Chequeamos mínimamente que los argumentos fueron pasados*/
@@ -52,24 +55,35 @@ int main(int argc, char **argv){
 
   /* Recibimos lo que nos manda el servidor */
   char buff[1024];
-  recv(sock, buf, sizeof(buf),0);
-  printf("%s", buf);
-  int pos = scanf("%29[^\n]", buff); // revisar README
+  recv(sock, buff, sizeof(buff),0);
+  printf("%s", buff);
+  scanf("%30[^\n]", buff); // revisar README
   getchar();
-  send(sock, buff, pos,0);
+  send(sock, buff, sizeof(buff),0);
 
-  int i = 1;
-  while(i) {
-    printf("> ");
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+  pthread_create(&thread , NULL , listener, (void *) &sock);
+
+  while(strcmp(buff, "/exit")) {
     scanf("%[^\n]", buff);
     getchar();
     send(sock, buff, sizeof(buff),0);
-    i = strcmp(buff, "/exit");
   }
 
-  /* Cerramos :D!*/
   freeaddrinfo(resultado);
   close(sock);
-
   return 0;
+}
+
+void * listener(void *_arg){
+  int sock = *(int*) _arg;
+  char buff[1024];
+
+  for(;;) {
+    recv(sock, buff, sizeof(buff),0);
+    printf("%s\n", buff);
+  }
+
+  return NULL;
 }
