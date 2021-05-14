@@ -54,7 +54,7 @@ int main(int argc, char **argv){
   char buff[1024];
   recv(sock, buf, sizeof(buf),0);
   printf("%s", buf);
-  int pos = scanf("%10[^\n]", buff);
+  int pos = scanf("%29[^\n]", buff); // revisar README
   getchar();
   send(sock, buff, pos,0);
 

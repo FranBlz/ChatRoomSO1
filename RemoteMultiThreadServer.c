@@ -11,7 +11,7 @@
 servidor */
 
 /* Maxima cantidad de cliente que soportará nuestro servidor */
-#define MAX_CLIENTS 3
+#define MAX_CLIENTS 25
 #define MAX_NAMES 30
 #define MAX_LENGTH 1024
 
@@ -78,9 +78,9 @@ int main(int argc, char **argv){
     clientelen = sizeof(clientedir);
     soclient = accept(sock, (struct sockaddr *) &clientedir, &clientelen);
 
-    if (soclient == -1 || comun.spotsLeft + 1 == MAX_CLIENTS )
-      error("No se puedo aceptar la conexión. ");
-    else {
+    if (soclient == -1 || comun.spotsLeft == 0 ){
+      send(soclient, "No se puedo aceptar la conexión.", sizeof("No se puedo aceptar la conexión."), 0);
+    }else {
       int j;
       for(j = 0;comun.sockets[j] != -1; j++);
       comun.sockets[j] = soclient;
