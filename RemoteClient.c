@@ -54,9 +54,9 @@ int main(int argc, char **argv){
   char buff[1024];
   recv(sock, buf, sizeof(buf),0);
   printf("%s", buf);
-  scanf("%[^\n]", buff);
+  int pos = scanf("%10[^\n]", buff);
   getchar();
-  send(sock, buff, sizeof(buff),0);
+  send(sock, buff, pos,0);
 
   int i = 1;
   while(i) {

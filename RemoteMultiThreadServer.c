@@ -1,15 +1,9 @@
-/* RemoteMultiThreadServer.c */
-/* Cabeceras de Sockets */
 #include <sys/types.h>
 #include <sys/socket.h>
-/* Cabecera de direcciones por red */
 #include <netinet/in.h>
-/**********/
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
-/**********/
-/* Threads! */
 #include <pthread.h>
 #include <string.h>
 
@@ -17,13 +11,21 @@
 servidor */
 
 /* Maxima cantidad de cliente que soportará nuestro servidor */
-#define MAX_CLIENTS 2
+#define MAX_CLIENTS 3
+#define MAX_NAMES 30
 #define MAX_LENGTH 1024
 
+struct common {
+  int spotsLeft; // requiere mutex
+  pthread_mutex_t mutex;
+  int sockets[MAX_CLIENTS]; // cada hilo se encarga del suyo solamente
+  char *nicknames[MAX_CLIENTS]; // cada hilo se encarga del suyo solamente
+};
+
 typedef struct {
-  int* socket;
-  char nickname[MAX_LENGTH];
-} clientes;
+  int index;
+  struct common *datosComunes;
+} argumentos;
 
 /* Anunciamos el prototipo del hijo */
 void *child(void *arg);
@@ -31,7 +33,7 @@ void *child(void *arg);
 void error(char *msg);
 
 int main(int argc, char **argv){
-  int sock, *soclient;
+  int sock, soclient;
   struct sockaddr_in servidor, clientedir;
   socklen_t clientelen;
   pthread_t thread;
@@ -61,63 +63,65 @@ int main(int argc, char **argv){
   pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
   /************************************************************/
 
+  struct common comun;
+  comun.spotsLeft = MAX_CLIENTS;
+  //comun.mutex = PTHREAD_MUTEX_INITIALIZER;
+  for(int i=0;i<MAX_CLIENTS;i++)
+    comun.sockets[i]=-1;
+
   /* Ya podemos aceptar conexiones */
   if(listen(sock, MAX_CLIENTS) == -1)
     error(" Listen error ");
 
-  clientes clientList[MAX_CLIENTS];
-  int numClient = 0;
-
-  for(int i=0;i<MAX_CLIENTS;i++)
-    clientList[i].socket = NULL;
-
   for(;;){ /* Comenzamos con el bucle infinito*/
-    int available;
-    for(available=0; available<MAX_CLIENTS && clienteList[available].socket != NULL; i++);
-
-    /* Pedimos memoria para el socket */
-    soclient = malloc(sizeof(int));
-
     /* Now we can accept connections as they come*/
     clientelen = sizeof(clientedir);
-    if ((*soclient = accept(sock
-                          , (struct sockaddr *) &clientedir
-                          , &clientelen)) == -1)
+    soclient = accept(sock, (struct sockaddr *) &clientedir, &clientelen);
+
+    if (soclient == -1 || comun.spotsLeft + 1 == MAX_CLIENTS )
       error("No se puedo aceptar la conexión. ");
-
-    if(numClient + 1 == MAX_CLIENTS) {
-      send_reject_msg
+    else {
+      int j;
+      for(j = 0;comun.sockets[j] != -1; j++);
+      comun.sockets[j] = soclient;
+      argumentos args;
+      args.datosComunes = &comun;
+      args.index = j;
+      pthread_create(&thread , NULL , child, (void *) &args);
+      pthread_mutex_lock(&(comun.mutex));
+      comun.spotsLeft--;
+      pthread_mutex_unlock(&(comun.mutex));
     }
-
-    /* Le enviamos el socket al hijo*/
-    pthread_create(&thread , NULL , child, (void *) soclient);
-    numClient++;
-
-    /* El servidor puede hacer alguna tarea más o simplemente volver a esperar*/
   }
 
   /* Código muerto */
   close(sock);
-
   return 0;
 }
 
-void * child(void *_arg){
-  int socket = *(int*) _arg;
-  char buf[1024], nick[1024];
 
-  send(socket, "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
-  recv(socket, nick, sizeof(nick), 0);
+void * child(void *_arg){
+  argumentos arg = *(argumentos*) _arg;
+  char buf[MAX_LENGTH];
+  int *sockets = arg.datosComunes->sockets;
+  char **nicknames = arg.datosComunes->nicknames;
+  nicknames[arg.index] = malloc(sizeof(char)*MAX_NAMES);
+
+  send(sockets[arg.index], "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
+  recv(sockets[arg.index], buf, sizeof(buf), 0);
+  strcpy(nicknames[arg.index], buf);
 
   int i = 1;
   while(i) {
-    recv(socket, buf, sizeof(buf), 0);
-    printf("%s: %s\n", nick, buf);
+    recv(sockets[arg.index], buf, sizeof(buf), 0);
+    printf("%s: %s\n", nicknames[arg.index], buf);
 
     i = strcmp(buf,"/exit");
   }
-  printf("%s ha salido\n", nick);
-  free((int*)_arg);
+  printf("%s ha salido\n", nicknames[arg.index]);
+  pthread_mutex_lock(&(arg.datosComunes->mutex));
+  arg.datosComunes->spotsLeft++;
+  pthread_mutex_unlock(&(arg.datosComunes->mutex));
   return NULL;
 }
 
