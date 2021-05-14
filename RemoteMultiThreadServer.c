@@ -102,6 +102,19 @@ int main(int argc, char **argv){
   return 0;
 }
 
+void ingresar_nickname(int socket, char *nicknames[], char *buf) {
+  int valid = 0;
+  while(!valid) {
+    valid = 1;
+    send(socket, "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
+    recv(socket, buf, sizeof(buf), 0);
+    for(int i=0;i<MAX_CLIENTS;i++){
+      if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
+        valid = 0;
+      }
+  }
+  send(socket, "OK", sizeof("OK"), 0);
+}
 
 void * child(void *_arg){
   argumentos arg = *(argumentos*) _arg;
@@ -111,9 +124,7 @@ void * child(void *_arg){
   int i;
 
   nicknames[arg.index] = malloc(sizeof(char)*MAX_NAMES);
-
-  send(sockets[arg.index], "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
-  recv(sockets[arg.index], buf, sizeof(buf), 0);
+  ingresar_nickname(sockets[arg.index], nicknames, buf);
   strcpy(nicknames[arg.index], buf);
 
   while(strcmp(buf,"/exit")) {
@@ -145,6 +156,7 @@ void * child(void *_arg){
   pthread_mutex_lock(&(arg.datosComunes->mutex));
   arg.datosComunes->spotsLeft++;
   pthread_mutex_unlock(&(arg.datosComunes->mutex));
+  free(nicknames[arg.index]);
   nicknames[arg.index] = NULL;
   sockets[arg.index] = -1;
   return NULL;

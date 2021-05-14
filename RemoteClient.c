@@ -19,11 +19,17 @@
   $cliente IP port
  */
 
+ #define MAX_NAMES 30
+ #define MAX_LENGTH 1024
+
 void error(char *msg){
   exit((perror(msg), 1));
 }
 
 void * listener(void *_arg);
+void sender(int socket);
+
+void ingresar_nickname(int sock);
 
 int main(int argc, char **argv){
   int sock;
@@ -51,32 +57,55 @@ int main(int argc, char **argv){
     /* if(connect(sock, (struct sockaddr *) &servidor, sizeof(servidor)) != 0) */
     error("No se pudo conectar :(. ");
 
-  printf("La conexión fue un éxito!\n");
-
-  /* Recibimos lo que nos manda el servidor */
-  char buff[1024];
-  recv(sock, buff, sizeof(buff),0);
-  printf("%s", buff);
-  scanf("%30[^\n]", buff); // revisar README
-  getchar();
-  send(sock, buff, sizeof(buff),0);
-
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+
+  ingresar_nickname(sock);
+  /* Recibimos lo que nos manda el servidor */
   pthread_create(&thread , NULL , listener, (void *) &sock);
 
-  while(strcmp(buff, "/exit")) {
-    scanf("%[^\n]", buff);
-    getchar();
-    send(sock, buff, sizeof(buff),0);
-  }
+  sender(sock);
 
   freeaddrinfo(resultado);
   close(sock);
   return 0;
 }
 
-void * listener(void *_arg){
+void ingresar_nickname(int sock) {
+  char buf[MAX_LENGTH] = "";
+
+  recv(sock, buf, sizeof(buf),0);
+  for(;strcmp("OK", buf);) {
+    printf("%s", buf);
+    /*
+     * largo 1 minimo
+     * largo 30 maximo
+     * no puede empezar con /
+     * no puede tener espacio blanco
+     */
+    for(int j = 1;j;) {
+      scanf("%30[^\n]", buf);
+      getchar();
+      if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' '))
+        printf("Nickname invalido.\nIngrese un nickname: ");
+      else
+        j = 0;
+    }
+    send(sock, buf, sizeof(buf),0);
+    recv(sock, buf, sizeof(buf),0);
+  }
+}
+
+void sender(int sock) {
+  char buf[MAX_LENGTH];
+  while(strcmp(buf, "/exit")) {
+    scanf("%[^\n]", buf);
+    getchar();
+    send(sock, buf, sizeof(buf),0);
+  }
+}
+
+void *listener(void *_arg){
   int sock = *(int*) _arg;
   char buff[1024];
 
