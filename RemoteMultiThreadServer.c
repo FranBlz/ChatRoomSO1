@@ -107,7 +107,8 @@ void ingresar_nickname(int socket, char *nicknames[], char *buf) {
   while(!valid) {
     valid = 1;
     send(socket, "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
-    recv(socket, buf, sizeof(buf), 0);
+    recv(socket, buf, sizeof(char)*MAX_NAMES, 0);
+    printf("%s\n",buf);
     for(int i=0;i<MAX_CLIENTS;i++){
       if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
         valid = 0;
