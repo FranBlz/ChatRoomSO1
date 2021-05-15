@@ -20,3 +20,6 @@ To-Do:
 - [ ] Revisar limite y validez nickname (lado del cliente)
 - [x] Arreglar si se va un cliente, y se le manda un mensaje este se envia.
 - [ ] Consultar sobre cerrar "bien" los clientes mediante signals
+
+- [ ] Tenemos salto condicional con variable sin inicializar en linea 112 servidor
+- [ ] Problema: si se pasa un string que supere el buf del scanf se rompe el cliente

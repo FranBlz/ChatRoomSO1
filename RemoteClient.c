@@ -72,21 +72,16 @@ int main(int argc, char **argv){
 }
 
 void ingresar_nickname(int sock) {
-  char buf[MAX_LENGTH] = "";
+  char buf[MAX_NAMES] = "";
 
   recv(sock, buf, sizeof(buf),0);
   for(;strcmp("OK", buf);) {
     printf("%s", buf);
-    /*
-     * largo 1 minimo
-     * largo 30 maximo
-     * no puede empezar con /
-     * no puede tener espacio blanco
-     */
+    
     for(int j = 1;j;) {
-      scanf("%30[^\n]", buf);
+      scanf("%[^\n]", buf);
       getchar();
-      if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' '))
+      if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || strlen(buf) > MAX_NAMES)
         printf("Nickname invalido.\nIngrese un nickname: ");
       else
         j = 0;
