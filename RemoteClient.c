@@ -72,21 +72,23 @@ int main(int argc, char **argv){
 }
 
 void ingresar_nickname(int sock) {
-  char buf[MAX_LENGTH] = "";
+  char buf[MAX_NAMES] = "", ch;
+  int overf;
 
   recv(sock, buf, sizeof(buf),0);
   for(;strcmp("OK", buf);) {
     printf("%s", buf);
-    /*
-     * largo 1 minimo
-     * largo 30 maximo
-     * no puede empezar con /
-     * no puede tener espacio blanco
-     */
+
     for(int j = 1;j;) {
-      scanf("%30[^\n]", buf);
-      getchar();
-      if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' '))
+      overf = 0;
+      fgets(buf,MAX_NAMES,stdin);
+      if(buf[strlen(buf)-1]!='\n') {
+        overf++;
+        while(((ch = getchar()!='\n') && (ch!=EOF)));
+      }
+      buf[strlen(buf)-1]='\0';
+
+      if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || overf)
         printf("Nickname invalido.\nIngrese un nickname: ");
       else
         j = 0;
@@ -97,11 +99,16 @@ void ingresar_nickname(int sock) {
 }
 
 void sender(int sock) {
-  char buf[MAX_LENGTH];
+  char buf[MAX_LENGTH], ch;
   while(strcmp(buf, "/exit")) {
-    scanf("%[^\n]", buf);
-    getchar();
-    send(sock, buf, sizeof(buf),0);
+    fgets(buf,MAX_LENGTH,stdin);
+    if(buf[strlen(buf)-1]!='\n') {
+      printf("Mensaje muy largo\n");
+      while(((ch = getchar()!='\n') && (ch!=EOF)));
+    }else {
+      buf[strlen(buf)-1]='\0';
+      send(sock, buf, sizeof(buf),0);
+    }
   }
 }
 

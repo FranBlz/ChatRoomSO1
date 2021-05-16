@@ -104,14 +104,16 @@ int main(int argc, char **argv){
 
 void ingresar_nickname(int socket, char *nicknames[], char *buf) {
   int valid = 0;
+
   while(!valid) {
     valid = 1;
+
     send(socket, "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
-    recv(socket, buf, sizeof(buf), 0);
+    recv(socket, buf, sizeof(char)*MAX_NAMES, 0);
     for(int i=0;i<MAX_CLIENTS;i++){
       if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
         valid = 0;
-      }
+    }
   }
   send(socket, "OK", sizeof("OK"), 0);
 }
@@ -123,8 +125,9 @@ void * child(void *_arg){
   char **nicknames = arg.datosComunes->nicknames;
   int i;
 
-  nicknames[arg.index] = malloc(sizeof(char)*MAX_NAMES);
   ingresar_nickname(sockets[arg.index], nicknames, buf);
+
+  nicknames[arg.index] = malloc(sizeof(char)*MAX_NAMES);
   strcpy(nicknames[arg.index], buf);
 
   while(strcmp(buf,"/exit")) {
@@ -132,9 +135,25 @@ void * child(void *_arg){
     temp = strtok(buf, " ");
 
     if(!strcmp(temp,"/nickname")) {
-      strcpy(nicknames[arg.index], strtok(NULL, " "));
-    }
-    if(!strcmp(temp,"/msg")) {
+      temp = strtok(NULL, "");
+      if(temp) {
+        strcpy(buf, temp);
+        if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || strlen(buf) >= MAX_NAMES) {
+          send(sockets[arg.index], "Nickname inválido, intente de nuevo", sizeof("Nickname inválido, intente de nuevo"), 0);
+        }else {
+          int valid = 1;
+          for(int i=0;i<MAX_CLIENTS;i++){
+            if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
+            valid = 0;
+          }
+          if(valid) {
+            strcpy(nicknames[arg.index], buf);
+          }else {
+            send(sockets[arg.index], "Nickname inválido, intente de nuevo", sizeof("Nickname inválido, intente de nuevo"), 0);
+          }
+        }
+      }
+    }else if(!strcmp(temp,"/msg")) {
       temp = strtok(NULL, " ");
       for(i = 0; i<MAX_CLIENTS && (!nicknames[i] || strcmp(nicknames[i], temp)); i++);
       if(i != MAX_CLIENTS) {
@@ -151,11 +170,11 @@ void * child(void *_arg){
       }
     }
   }
-
   printf("%s ha salido\n", nicknames[arg.index]);
   pthread_mutex_lock(&(arg.datosComunes->mutex));
   arg.datosComunes->spotsLeft++;
   pthread_mutex_unlock(&(arg.datosComunes->mutex));
+
   free(nicknames[arg.index]);
   nicknames[arg.index] = NULL;
   sockets[arg.index] = -1;
