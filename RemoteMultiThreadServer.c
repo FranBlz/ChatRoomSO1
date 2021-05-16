@@ -108,7 +108,7 @@ void ingresar_nickname(int socket, char *nicknames[], char *buf) {
     valid = 1;
     send(socket, "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
     recv(socket, buf, sizeof(char)*MAX_NAMES, 0);
-    printf("%s\n",buf);
+    //printf("%s\n",buf);
     for(int i=0;i<MAX_CLIENTS;i++){
       if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
         valid = 0;
@@ -131,11 +131,24 @@ void * child(void *_arg){
   while(strcmp(buf,"/exit")) {
     recv(sockets[arg.index], buf, sizeof(buf), 0);
     temp = strtok(buf, " ");
-
+    
     if(!strcmp(temp,"/nickname")) {
-      strcpy(nicknames[arg.index], strtok(NULL, " "));
-    }
-    if(!strcmp(temp,"/msg")) {
+      temp = strtok(NULL, "");
+      if(!temp) {
+        buf[0] = '\0';
+      }else {
+        strcpy(buf, temp);
+      }
+      for(int i = 1; i;) {
+        if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || strlen(buf) >= MAX_NAMES) {
+          send(sockets[arg.index], "Nickname inválido, ingrese otro nickname", sizeof("Nickname inválido, ingrese otro nickname"), 0);
+          recv(sockets[arg.index], buf, sizeof(buf), 0);
+        }else {
+          strcpy(nicknames[arg.index], buf);
+          i = 0;
+        }
+      }
+    }else if(!strcmp(temp,"/msg")) {
       temp = strtok(NULL, " ");
       for(i = 0; i<MAX_CLIENTS && (!nicknames[i] || strcmp(nicknames[i], temp)); i++);
       if(i != MAX_CLIENTS) {

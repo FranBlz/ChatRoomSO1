@@ -78,7 +78,7 @@ void ingresar_nickname(int sock) {
   recv(sock, buf, sizeof(buf),0);
   for(;strcmp("OK", buf);) {
     printf("%s", buf);
-    
+
     for(int j = 1;j;) {
       overf = 0;
       fgets(buf,MAX_NAMES,stdin);
@@ -99,11 +99,16 @@ void ingresar_nickname(int sock) {
 }
 
 void sender(int sock) {
-  char buf[MAX_LENGTH];
+  char buf[MAX_LENGTH], ch;
   while(strcmp(buf, "/exit")) {
-    scanf("%[^\n]", buf);
-    getchar();
-    send(sock, buf, sizeof(buf),0);
+    fgets(buf,MAX_LENGTH,stdin);
+    if(buf[strlen(buf)-1]!='\n') {
+      printf("Mensaje muy largo\n");
+      while(((ch = getchar()!='\n') && (ch!=EOF)));
+    }else {
+      buf[strlen(buf)-1]='\0';
+      send(sock, buf, sizeof(buf),0);
+    }
   }
 }
 

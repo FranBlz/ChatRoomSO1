@@ -15,7 +15,7 @@ To-Do:
 - [x] Revisar limite y validez nickname (lado del cliente)
 - [x] Arreglar si se va un cliente, y se le manda un mensaje este se envia.
 - [ ] Consultar sobre cerrar "bien" los clientes mediante signals
-- [ ] Revisar limite mensajes
+- [x] Revisar limite mensajes
 - [ ] Cerrar amablemente el servidor
 - [ ] Al cerrar cliente se cierra hilo y se liberan los recursos (/exit)
   - Con SIGINT (ctrl+c)
@@ -23,5 +23,5 @@ To-Do:
 
 - [ ] Tenemos salto condicional con variable sin inicializar en linea 112 servidor
 - [ ] Si un cliente se cierra abruptamente durante la peticion de nickname se cae el servidor
-- [ ] Es posible cambiarse el nickname por uno invalido y romper el programa
-- [ ] Los mensajes no tienen chequeo de sobrepasar el buf del scanf ni el limite de caracteres
+- [x] Es posible cambiarse el nickname por uno invalido y romper el programa
+- [x] Los mensajes no tienen chequeo de sobrepasar el buf del scanf ni el limite de caracteres
