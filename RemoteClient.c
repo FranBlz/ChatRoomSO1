@@ -29,6 +29,7 @@ void error(char *msg){
 void * listener(void *_arg);
 void sender(int socket);
 
+int read_input(char *dest, int max);
 void ingresar_nickname(int sock);
 
 int main(int argc, char **argv){
@@ -72,43 +73,33 @@ int main(int argc, char **argv){
 }
 
 void ingresar_nickname(int sock) {
-  char buf[MAX_NAMES] = "", ch;
-  int overf;
+  char buf[MAX_NAMES] = "";
+  int overf, no_valid = 1;
 
   recv(sock, buf, sizeof(buf),0);
-  for(;strcmp("OK", buf);) {
-    printf("%s", buf);
-
-    for(int j = 1;j;) {
-      overf = 0;
-      fgets(buf,MAX_NAMES,stdin);
-      if(buf[strlen(buf)-1]!='\n') {
-        overf++;
-        while(((ch = getchar()!='\n') && (ch!=EOF)));
-      }
-      buf[strlen(buf)-1]='\0';
-
-      if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || overf)
-        printf("Nickname invalido.\nIngrese un nickname: ");
-      else
-        j = 0;
+  printf("%s", buf);
+  while(no_valid) {
+    overf = !read_input(buf, MAX_NAMES);
+    
+    if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || overf)
+      printf("Nickname invalido.\nIngrese un nickname: ");
+    else {
+      send(sock, buf, sizeof(buf), 0);
+      recv(sock, buf, sizeof(buf), 0);
+      no_valid = strcmp("OK", buf);
+      if(no_valid)
+        printf("%s", buf);
     }
-    send(sock, buf, sizeof(buf),0);
-    recv(sock, buf, sizeof(buf),0);
   }
 }
 
 void sender(int sock) {
-  char buf[MAX_LENGTH], ch;
+  char buf[MAX_LENGTH];
   while(strcmp(buf, "/exit")) {
-    fgets(buf,MAX_LENGTH,stdin);
-    if(buf[strlen(buf)-1]!='\n') {
-      printf("Mensaje muy largo\n");
-      while(((ch = getchar()!='\n') && (ch!=EOF)));
-    }else {
-      buf[strlen(buf)-1]='\0';
+    if(read_input(buf, MAX_LENGTH))
       send(sock, buf, sizeof(buf),0);
-    }
+    else
+      printf("Mensaje muy largo\n");
   }
 }
 
@@ -122,4 +113,18 @@ void *listener(void *_arg){
   }
 
   return NULL;
+}
+
+int read_input(char *dest, int max){
+  char ch;
+  int overf;
+  
+  fgets(dest, max, stdin);
+
+  if ((overf = dest[strlen(dest)-1] != '\n'))
+    while(((ch = getchar()!='\n') && (ch!=EOF)));
+  else
+    dest[strlen(dest)-1]='\0';
+
+  return !overf;
 }
