@@ -25,3 +25,4 @@ To-Do:
 - [ ] Si un cliente se cierra abruptamente durante la peticion de nickname se cae el servidor
 - [x] Es posible cambiarse el nickname por uno invalido y romper el programa
 - [x] Los mensajes no tienen chequeo de sobrepasar el buf del scanf ni el limite de caracteres
+- [ ] Si se cambia el nombre a /exit mediante /nickname se sale del cliente

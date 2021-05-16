@@ -131,21 +131,15 @@ void * child(void *_arg){
   while(strcmp(buf,"/exit")) {
     recv(sockets[arg.index], buf, sizeof(buf), 0);
     temp = strtok(buf, " ");
-    
+
     if(!strcmp(temp,"/nickname")) {
       temp = strtok(NULL, "");
-      if(!temp) {
-        buf[0] = '\0';
-      }else {
+      if(temp) {
         strcpy(buf, temp);
-      }
-      for(int i = 1; i;) {
         if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || strlen(buf) >= MAX_NAMES) {
-          send(sockets[arg.index], "Nickname inválido, ingrese otro nickname", sizeof("Nickname inválido, ingrese otro nickname"), 0);
-          recv(sockets[arg.index], buf, sizeof(buf), 0);
+          send(sockets[arg.index], "Nickname inválido, intente de nuevo", sizeof("Nickname inválido, intente de nuevo"), 0);
         }else {
           strcpy(nicknames[arg.index], buf);
-          i = 0;
         }
       }
     }else if(!strcmp(temp,"/msg")) {
