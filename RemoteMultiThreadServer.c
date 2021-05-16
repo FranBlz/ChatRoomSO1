@@ -112,7 +112,7 @@ void ingresar_nickname(int socket, char *nicknames[], char *buf) {
     for(int i=0;i<MAX_CLIENTS;i++){
       if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
         valid = 0;
-      }
+    }
   }
   send(socket, "OK", sizeof("OK"), 0);
 }
@@ -139,7 +139,16 @@ void * child(void *_arg){
         if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || strlen(buf) >= MAX_NAMES) {
           send(sockets[arg.index], "Nickname inválido, intente de nuevo", sizeof("Nickname inválido, intente de nuevo"), 0);
         }else {
-          strcpy(nicknames[arg.index], buf);
+          int valid = 1;
+          for(int i=0;i<MAX_CLIENTS;i++){
+            if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
+              valid = 0;
+          }
+          if(valid) {
+            strcpy(nicknames[arg.index], buf);
+          }else {
+            send(sockets[arg.index], "Nickname inválido, intente de nuevo", sizeof("Nickname inválido, intente de nuevo"), 0);
+          }
         }
       }
     }else if(!strcmp(temp,"/msg")) {
