@@ -11,5 +11,4 @@ cliente.o: $(CLIENTES).c
 	gcc -o cliente $(CLIENTES).c $(FLAGS)
 
 clean:
-	rm server
-	rm cliente
+	rm server cliente
