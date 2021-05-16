@@ -23,5 +23,6 @@ To-Do:
 
 - [x] Tenemos salto condicional con variable sin inicializar en linea 112 servidor
 - [ ] Si un cliente se cierra abruptamente durante la peticion de nickname se cae el servidor
+- [ ] Si un cliente se cierra abruptamente durante su comunicacion (despues de dar su nombre) el hilo queda abierto con todos sus datos ocupados
 - [x] Es posible cambiarse el nickname por uno invalido y romper el programa
 - [x] Los mensajes no tienen chequeo de sobrepasar el buf del scanf ni el limite de caracteres
