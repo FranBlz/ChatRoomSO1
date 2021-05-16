@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <signal.h>
+
 /*
   El archivo describe un sencillo cliente que se conecta al servidor establecido
   en el archivo RemoteServer.c. Se utiliza de la siguiente manera:
@@ -22,9 +24,12 @@
  #define MAX_NAMES 30
  #define MAX_LENGTH 1024
 
-void error(char *msg){
+void error(char *msg) {
   exit((perror(msg), 1));
 }
+
+void error_handler(int arg);
+void safe_close_connection(int *sock);
 
 void * listener(void *_arg);
 void sender(int socket);
@@ -37,6 +42,9 @@ int main(int argc, char **argv){
   pthread_t thread;
   pthread_attr_t attr;
   struct addrinfo *resultado;
+
+  /* Redefinimos el comportamiento de las señales */
+  signal(SIGINT, error_handler);
 
   /*Chequeamos mínimamente que los argumentos fueron pasados*/
   if(argc != 3){
@@ -54,8 +62,9 @@ int main(int argc, char **argv){
     exit(2);
   }
 
+  safe_close_connection(&sock);
+
   if(connect(sock, (struct sockaddr *) resultado->ai_addr, resultado->ai_addrlen) != 0)
-    /* if(connect(sock, (struct sockaddr *) &servidor, sizeof(servidor)) != 0) */
     error("No se pudo conectar :(. ");
 
   pthread_attr_init(&attr);
@@ -127,4 +136,21 @@ int read_input(char *dest, int max){
     dest[strlen(dest)-1]='\0';
 
   return !overf;
+}
+
+void error_handler(int arg) {
+  safe_close_connection(NULL);
+  error("Ocurrio un error inesperado\n");
+}
+
+void  safe_close_connection(int *sock){
+  static int socket;
+
+  if(sock)
+    socket = *sock;
+  else if(socket) {
+    send(socket, "/exit", sizeof("/exit"),0);
+    close(socket);
+  }
+
 }
