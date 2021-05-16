@@ -104,11 +104,12 @@ int main(int argc, char **argv){
 
 void ingresar_nickname(int socket, char *nicknames[], char *buf) {
   int valid = 0;
+
   while(!valid) {
     valid = 1;
+
     send(socket, "Ingrese su nickname: ", sizeof("Ingrese su nickname: "), 0);
     recv(socket, buf, sizeof(char)*MAX_NAMES, 0);
-    //printf("%s\n",buf);
     for(int i=0;i<MAX_CLIENTS;i++){
       if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
         valid = 0;
@@ -124,8 +125,9 @@ void * child(void *_arg){
   char **nicknames = arg.datosComunes->nicknames;
   int i;
 
-  nicknames[arg.index] = malloc(sizeof(char)*MAX_NAMES);
   ingresar_nickname(sockets[arg.index], nicknames, buf);
+
+  nicknames[arg.index] = malloc(sizeof(char)*MAX_NAMES);
   strcpy(nicknames[arg.index], buf);
 
   while(strcmp(buf,"/exit")) {
@@ -142,7 +144,7 @@ void * child(void *_arg){
           int valid = 1;
           for(int i=0;i<MAX_CLIENTS;i++){
             if(nicknames[i] && strcmp(buf, nicknames[i]) == 0)
-              valid = 0;
+            valid = 0;
           }
           if(valid) {
             strcpy(nicknames[arg.index], buf);
@@ -168,11 +170,11 @@ void * child(void *_arg){
       }
     }
   }
-
   printf("%s ha salido\n", nicknames[arg.index]);
   pthread_mutex_lock(&(arg.datosComunes->mutex));
   arg.datosComunes->spotsLeft++;
   pthread_mutex_unlock(&(arg.datosComunes->mutex));
+
   free(nicknames[arg.index]);
   nicknames[arg.index] = NULL;
   sockets[arg.index] = -1;

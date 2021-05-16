@@ -21,7 +21,7 @@ To-Do:
   - Con SIGINT (ctrl+c)
   - Verificar casos de error
 
-- [ ] Tenemos salto condicional con variable sin inicializar en linea 112 servidor
+- [x] Tenemos salto condicional con variable sin inicializar en linea 112 servidor
 - [ ] Si un cliente se cierra abruptamente durante la peticion de nickname se cae el servidor
 - [x] Es posible cambiarse el nickname por uno invalido y romper el programa
 - [x] Los mensajes no tienen chequeo de sobrepasar el buf del scanf ni el limite de caracteres
