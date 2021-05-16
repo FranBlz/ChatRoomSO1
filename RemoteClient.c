@@ -116,11 +116,14 @@ void *listener(void *_arg){
   int sock = *(int*) _arg;
   char buff[1024];
 
-  for(;;) {
-    recv(sock, buff, sizeof(buff),0);
+  recv(sock, buff, sizeof(buff),0);
+  while(strcmp("EXIT", buff)) {
     printf("%s\n", buff);
+    recv(sock, buff, sizeof(buff),0);
   }
 
+  close(sock);
+  error("Se ha cerrado la conexion al servidor abruptamente.\n");
   return NULL;
 }
 
