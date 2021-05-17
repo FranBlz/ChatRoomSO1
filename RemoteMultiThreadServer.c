@@ -34,7 +34,7 @@ void *child(void *arg);
 void error(char *msg);
 /* Definimos una funcion para manejar las señales */
 void error_handler(int arg);
-void safe_close_connection(int *socks, int cant_socks);
+void safe_close_connection(int *socks, char **nicks, int cant_socks);
 
 int main(int argc, char **argv){
   int sock, soclient;
@@ -77,7 +77,7 @@ int main(int argc, char **argv){
     comun.sockets[i] = -1;
   }
 
-  safe_close_connection(comun.sockets, MAX_CLIENTS);
+  safe_close_connection(comun.sockets, comun.nicknames, MAX_CLIENTS);
 
   /* Ya podemos aceptar conexiones */
   if(listen(sock, MAX_CLIENTS) == -1)
@@ -137,8 +137,8 @@ void * child(void *_arg){
   nicknames[arg.index] = malloc(sizeof(char)*MAX_NAMES);
   strcpy(nicknames[arg.index], buf);
 
+  recv(sockets[arg.index], buf, sizeof(buf), 0);
   while(strcmp(buf,"/exit")) {
-    recv(sockets[arg.index], buf, sizeof(buf), 0);
     temp = strtok(buf, " ");
 
     if(!strcmp(temp,"/nickname")) {
@@ -176,6 +176,7 @@ void * child(void *_arg){
         send(sockets[arg.index], buf, sizeof(buf), 0);
       }
     }
+    recv(sockets[arg.index], buf, sizeof(buf), 0);
   }
   printf("%s ha salido\n", nicknames[arg.index]);
   pthread_mutex_lock(&(arg.datosComunes->mutex));
@@ -192,22 +193,26 @@ void error(char *msg){
   exit((perror(msg), 1));
 }
 
-void safe_close_connection(int *socks, int cant_socks) {
+void safe_close_connection(int *socks, char **nicks, int cant_socks) {
   static int *sockets, cant;
+  static char **nicknames;
   if(socks) {
     sockets = socks;
     cant = cant_socks;
+    nicknames = nicks;
   } else if (sockets) {
-    for(int i=0; i<cant; i++)
+    for(int i=0; i<cant; i++) {
       if (sockets[i] != -1) {
-        printf("HOla");
         send(sockets[i], "EXIT", sizeof("EXIT"), 0);
         close(sockets[i]);
       }
+      if (nicknames[i] != NULL)
+        free(nicknames[i]);
+    }
   }
 }
 
 void error_handler(int arg) {
-  safe_close_connection(NULL, 0);
+  safe_close_connection(NULL, NULL, 0);
   error("Ocurrio un error inesperado\n");
 }
