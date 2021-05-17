@@ -34,6 +34,7 @@ void safe_close_connection(int *sock);
 void * listener(void *_arg);
 void sender(int socket);
 
+void read_from_sv(int sock, char *buf, int max);
 int read_input(char *dest, int max);
 void ingresar_nickname(int sock);
 
@@ -89,12 +90,12 @@ void ingresar_nickname(int sock) {
   printf("%s", buf);
   while(no_valid) {
     overf = !read_input(buf, MAX_NAMES);
-    
+
     if (buf[0] == '\0' || buf[0] == '/' || strchr(buf, ' ') || overf)
       printf("Nickname invalido.\nIngrese un nickname: ");
     else {
       send(sock, buf, sizeof(buf), 0);
-      recv(sock, buf, sizeof(buf), 0);
+      read_from_sv(sock, buf, MAX_NAMES);
       no_valid = strcmp("OK", buf);
       if(no_valid)
         printf("%s", buf);
@@ -103,7 +104,7 @@ void ingresar_nickname(int sock) {
 }
 
 void sender(int sock) {
-  char buf[MAX_LENGTH];
+  char buf[MAX_LENGTH] = "";
   while(strcmp(buf, "/exit")) {
     if(read_input(buf, MAX_LENGTH))
       send(sock, buf, sizeof(buf),0);
@@ -114,23 +115,20 @@ void sender(int sock) {
 
 void *listener(void *_arg){
   int sock = *(int*) _arg;
-  char buff[1024];
+  char buf[MAX_LENGTH];
 
-  recv(sock, buff, sizeof(buff),0);
-  while(strcmp("EXIT", buff)) {
-    printf("%s\n", buff);
-    recv(sock, buff, sizeof(buff),0);
+  while(1) {
+    read_from_sv(sock, buf, MAX_LENGTH);
+    printf("%s\n", buf);
   }
 
-  close(sock);
-  error("Se ha cerrado la conexion al servidor abruptamente.\n");
   return NULL;
 }
 
 int read_input(char *dest, int max){
   char ch;
   int overf;
-  
+
   fgets(dest, max, stdin);
 
   if ((overf = dest[strlen(dest)-1] != '\n'))
@@ -146,7 +144,7 @@ void error_handler(int arg) {
   error("Ocurrio un error inesperado\n");
 }
 
-void  safe_close_connection(int *sock){
+void safe_close_connection(int *sock){
   static int socket;
 
   if(sock)
@@ -156,4 +154,12 @@ void  safe_close_connection(int *sock){
     close(socket);
   }
 
+}
+
+void read_from_sv(int sock, char *buf, int max) {
+  recv(sock, buf, sizeof(char)*max, 0);
+  if (!strcmp("EXIT", buf)) {
+    close(sock);
+    error("Ocurrio un error inesperado\n");
+  }
 }
