@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <signal.h>
 
 /* Asumimos que el primer argumento es el puerto por el cual escuchará nuestro
 servidor */
@@ -31,6 +32,9 @@ typedef struct {
 void *child(void *arg);
 /* Definimos una pequeña función auxiliar de error */
 void error(char *msg);
+/* Definimos una funcion para manejar las señales */
+void error_handler(int arg);
+void safe_close_connection(int *socks, int cant_socks);
 
 int main(int argc, char **argv){
   int sock, soclient;
@@ -41,6 +45,7 @@ int main(int argc, char **argv){
   struct common comun;
 
   if (argc <= 1) error("Faltan argumentos");
+  signal(SIGINT, error_handler);
 
   /* Creamos el socket */
   if( (sock = socket(AF_INET, SOCK_STREAM, 0)) < 0 )
@@ -71,6 +76,8 @@ int main(int argc, char **argv){
     comun.nicknames[i] = NULL;
     comun.sockets[i] = -1;
   }
+
+  safe_close_connection(comun.sockets, MAX_CLIENTS);
 
   /* Ya podemos aceptar conexiones */
   if(listen(sock, MAX_CLIENTS) == -1)
@@ -183,4 +190,24 @@ void * child(void *_arg){
 
 void error(char *msg){
   exit((perror(msg), 1));
+}
+
+void safe_close_connection(int *socks, int cant_socks) {
+  static int *sockets, cant;
+  if(socks) {
+    sockets = socks;
+    cant = cant_socks;
+  } else if (sockets) {
+    for(int i=0; i<cant; i++)
+      if (sockets[i] != -1) {
+        printf("HOla");
+        send(sockets[i], "EXIT", sizeof("EXIT"), 0);
+        close(sockets[i]);
+      }
+  }
+}
+
+void error_handler(int arg) {
+  safe_close_connection(NULL, 0);
+  error("Ocurrio un error inesperado\n");
 }
