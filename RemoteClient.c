@@ -1,13 +1,6 @@
-/* RemoteClient.c
-   Se introducen las primitivas necesarias para establecer una conexión simple
-   dentro del lenguaje C utilizando sockets.
-*/
-/* Cabeceras de Sockets */
 #include <sys/types.h>
 #include <sys/socket.h>
-/* Cabecera de direcciones por red */
 #include <netdb.h>
-/**********/
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -16,29 +9,58 @@
 #include <signal.h>
 
 /*
-  El archivo describe un sencillo cliente que se conecta al servidor establecido
-  en el archivo RemoteServer.c. Se utiliza de la siguiente manera:
-  $cliente IP port
- */
+  Ejecución:
+  - make
+  - ./server 5000
+  (en otra terminal)- ./cliente 127.0.0.1 5000
+*/
 
- #define MAX_NAMES 30
- #define MAX_LENGTH 1024
+#define MAX_NAMES 30
+#define MAX_LENGTH 1024
 
 void error(char *msg) {
   exit((perror(msg), 1));
 }
 
+/* Recibe las señales y ejecuta el cierre de la conexion con los clientes */
 void error_handler(int arg);
+/*
+ * Es la encargada de liberar recursos y comunica al servidor que puede liberar los recursos del cliente.
+ * Si recibe un argumento distinto de NULL, los guarda en variables internas
+ * Si recibe NULL y las variables internas son distintas de NULL, envia al servidor el mensaje de salida.
+ */
 void safe_close_connection(int *sock);
 
+/*
+ * Encargada de escuchar las comunicaciones que llegan al cliente desde el servidor.
+ * Dichos mensajes ya llegan "procesados" por lo que solo se los recibe y comunica al usuario de ser necesario.
+ */
 void * listener(void *_arg);
+
+/*
+ * Encargada de enviar los mensajes del cliente al servidor una vez establecida la conexión y el nickname inicial.
+ */
 void sender(int socket);
 
+/*
+ * Lee del socket que recibe como parametro y lo guarda en el bufer tambien recibido como parametro.
+ * En caso de recibir un mensaje de error del servidor ejecuta el proceso de cierre del cliente.
+ */
 void read_from_sv(int sock, char *buf, int max);
+
+/*
+ * Encargada de procesar el input del usuario para su correcto uso posterior.
+ * De superarse el tamaño máximo se desecha la lectura y se limpia el buffer del stdin.
+ */
 int read_input(char *dest, int max);
+
+/*
+ * Dado un socket envia el nickname ingresado por el usuario hasta que sea valido.
+*/
 void ingresar_nickname(int sock);
 
 int main(int argc, char **argv){
+  /* Declaracion de variables */
   int sock;
   pthread_t thread;
   pthread_attr_t attr;
@@ -63,11 +85,14 @@ int main(int argc, char **argv){
     exit(2);
   }
 
+  /* llamamos a la función de salida segura para preservar la dirección del socket a cerrar en caso de interrupción */
   safe_close_connection(&sock);
 
+  /* Intentamos establecer la conexion con el servidor */
   if(connect(sock, (struct sockaddr *) resultado->ai_addr, resultado->ai_addrlen) != 0)
     error("No se pudo conectar :(. ");
 
+  /* Argumentos de los hilos */
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
 

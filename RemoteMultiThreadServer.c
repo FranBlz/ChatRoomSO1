@@ -8,14 +8,12 @@
 #include <string.h>
 #include <signal.h>
 
-/* Asumimos que el primer argumento es el puerto por el cual escuchará nuestro
-servidor */
-
 /* Maxima cantidad de cliente que soportará nuestro servidor */
 #define MAX_CLIENTS 25
 #define MAX_NAMES 30
 #define MAX_LENGTH 1024
 
+/* Estructura de datos comunes para todos los hilos */
 struct common {
   int spotsLeft; // requiere mutex
   pthread_mutex_t mutex;
@@ -23,6 +21,7 @@ struct common {
   char *nicknames[MAX_CLIENTS]; // cada hilo se encarga del suyo solamente
 };
 
+/* Estructura que será el argumento para cada hilo */
 typedef struct {
   int index;
   struct common *datosComunes;
@@ -34,9 +33,15 @@ void *child(void *arg);
 void error(char *msg);
 /* Definimos una funcion para manejar las señales */
 void error_handler(int arg);
+/*
+ * Si recibe parametros distinto de NULL, guarda las variables en variables internas.
+ * Si recibe parametros iguales a NULL, avisa a los clientes que la conexion se va a interrumpir,
+ * liberamos los recursos y ejecutamos la salida del servidor.
+*/
 void safe_close_connection(int *socks, char **nicks, int cant_socks);
 
 int main(int argc, char **argv){
+  /* Declaracion de variables */
   int sock, soclient;
   struct sockaddr_in servidor, clientedir;
   socklen_t clientelen;
@@ -44,7 +49,10 @@ int main(int argc, char **argv){
   pthread_attr_t attr;
   struct common comun;
 
+  /* Chequeo de parametros */
   if (argc <= 1) error("Faltan argumentos");
+
+  /* Seteamos la funcion error_handler para la señal SIGINT */
   signal(SIGINT, error_handler);
 
   /* Creamos el socket */
@@ -77,6 +85,7 @@ int main(int argc, char **argv){
     comun.sockets[i] = -1;
   }
 
+  /* Llamamos a la función de cierre seguro para preservar los datos necesario en una futura llamada por interrupción */
   safe_close_connection(comun.sockets, comun.nicknames, MAX_CLIENTS);
 
   /* Ya podemos aceptar conexiones */
@@ -109,6 +118,9 @@ int main(int argc, char **argv){
   return 0;
 }
 
+/*
+ * Encargada de obtener un nickname disponible del usuario. Persiste hasta obtener un nickname disponible.
+ */
 void ingresar_nickname(int socket, char *nicknames[], char *buf) {
   int valid = 0;
 
@@ -125,6 +137,7 @@ void ingresar_nickname(int socket, char *nicknames[], char *buf) {
   send(socket, "OK", sizeof("OK"), 0);
 }
 
+/* Función que ejecutan los hilos del programa, atenderán las necesidades del lado del servidor de su cliente */
 void * child(void *_arg){
   argumentos arg = *(argumentos*) _arg;
   char buf[MAX_LENGTH], rsp_mensaje[MAX_LENGTH], *temp;
@@ -193,6 +206,10 @@ void error(char *msg){
   exit((perror(msg), 1));
 }
 
+/*
+ * En caso de una interrupción por parte del servidor se libera la memoria pendiente y se notifica a los usuarios
+ * para que realicen su procedimiento de salida acorde.
+ */
 void safe_close_connection(int *socks, char **nicks, int cant_socks) {
   static int *sockets, cant;
   static char **nicknames;

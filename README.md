@@ -22,3 +22,8 @@ El mecanismo de cierre que implementamos tanto del lado del servidor como del cl
  - En el caso del cliente, al finalizar con esta señal le enviara al servidor un mensaje de exit y saldra del programa
  - En el caso del servidor, le enviara a cada uno de los clientes un mensaje de finalizacion, para los cuales los clientes deberan finalizar el programa
 
+## Ejecucion del programa
+
+- make
+- ./server PUERTO
+- ./cliente DIRECCION_IP PUERTO_DEL_SV
